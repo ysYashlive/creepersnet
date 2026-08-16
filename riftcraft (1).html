@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RIFTCRAFT — Minecraft &amp; VPS Hosting</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Rajdhani:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --void: #0A0810;
+    --void-2: #120D1C;
+    --panel: #16101F;
+    --blood: #C4223A;
+    --blood-glow: #FF3B54;
+    --violet: #8B2FC9;
+    --violet-glow: #B565F5;
+    --parchment: #ECE6F5;
+    --dim: rgba(236,230,245,0.55);
+    --line: rgba(181,101,245,0.18);
+  }
+  *{ box-sizing:border-box; }
+  html{ scroll-behavior:smooth; }
+  body{
+    margin:0; background: var(--void); color: var(--parchment);
+    font-family:'Rajdhani', sans-serif; font-weight:500;
+    -webkit-font-smoothing:antialiased;
+    position:relative; overflow-x:hidden;
+  }
+  h1,h2,h3{ font-family:'Cinzel', serif; margin:0; }
+  .mono{ font-family:'Space Mono', monospace; }
+
+  /* ambient particles */
+  #particles{ position:fixed; inset:0; pointer-events:none; z-index:1; overflow:hidden; }
+  .mote{
+    position:absolute; border-radius:50%; opacity:0;
+    animation: rise linear infinite;
+  }
+  @keyframes rise{
+    0%{ transform: translateY(0) scale(1); opacity:0; }
+    10%{ opacity:0.8; }
+    90%{ opacity:0.4; }
+    100%{ transform: translateY(-110vh) scale(0.6); opacity:0; }
+  }
+
+  /* header */
+  header{
+    position:sticky; top:0; z-index:60;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:18px 32px; background: rgba(10,8,16,0.88); backdrop-filter: blur(8px);
+    border-bottom:1px solid var(--line);
+  }
+  .logo{ display:flex; align-items:center; gap:12px; }
+  .logo-mark{
+    width:42px; height:42px; position:relative;
+    filter: drop-shadow(0 0 10px rgba(181,101,245,0.6));
+    flex-shrink:0;
+  }
+  .logo-mark svg{ width:100%; height:100%; display:block; }
+
+  /* three-dot category menu */
+  .dot-menu-wrap{ position:relative; }
+  .dot-menu-btn{
+    background: transparent; border:1px solid var(--line); color:var(--parchment);
+    width:40px; height:40px; border-radius:8px; cursor:pointer; display:flex; align-items:center; justify-content:center;
+    gap:3px; transition: all .15s ease;
+  }
+  .dot-menu-btn:hover{ border-color: var(--violet-glow); box-shadow: 0 0 12px rgba(181,101,245,0.35); }
+  .dot-menu-btn span{ width:4px; height:4px; border-radius:50%; background: var(--parchment); display:block; }
+  .dot-menu-btn:hover span{ background: var(--violet-glow); }
+  .dot-dropdown{
+    position:absolute; top:calc(100% + 10px); left:0; width:230px;
+    background: var(--panel); border:1px solid var(--line); border-radius:12px; padding:10px;
+    opacity:0; pointer-events:none; transform: translateY(-6px); transition: all .18s ease; z-index:70;
+    box-shadow: 0 14px 30px rgba(0,0,0,0.5);
+  }
+  .dot-dropdown.open{ opacity:1; pointer-events:auto; transform: translateY(0); }
+  .dot-dropdown .grp-label{ font-family:'Space Mono',monospace; font-size:10px; letter-spacing:0.15em; color:var(--dim); text-transform:uppercase; padding:8px 10px 4px; }
+  .dot-dropdown a{
+    display:flex; align-items:center; justify-content:space-between; padding:9px 10px; border-radius:8px;
+    color:var(--parchment); text-decoration:none; font-size:14px; font-weight:600;
+  }
+  .dot-dropdown a:hover{ background: rgba(181,101,245,0.12); color: var(--violet-glow); }
+  .dot-dropdown a .rank-chip{
+    font-family:'Space Mono',monospace; font-size:10px; padding:2px 7px; border-radius:999px; border:1px solid var(--line); color:var(--dim);
+  }
+  .dot-dropdown hr{ border:none; border-top:1px solid var(--line); margin:6px 0; }
+  .logo-text{ font-family:'Cinzel',serif; font-size:19px; letter-spacing:0.04em; font-weight:700; }
+  .logo-text span{ display:block; font-family:'Space Mono',monospace; font-size:9px; letter-spacing:0.2em; color: var(--violet-glow); text-transform:uppercase; margin-top:2px; font-weight:400; }
+  nav{ display:flex; align-items:center; gap:26px; }
+  nav a{ color:var(--parchment); text-decoration:none; font-size:15px; font-weight:600; opacity:0.85; }
+  nav a:hover{ opacity:1; color: var(--violet-glow); }
+  .hdr-actions{ display:flex; align-items:center; gap:12px; }
+  .icon-btn{
+    position:relative; background:transparent; border:1px solid var(--line); color:var(--parchment);
+    padding:9px 14px; border-radius:8px; font-size:14px; font-weight:600; cursor:pointer;
+    font-family:'Rajdhani',sans-serif; display:flex; align-items:center; gap:8px; transition: all .15s ease;
+  }
+  .icon-btn:hover{ border-color: var(--violet-glow); box-shadow: 0 0 12px rgba(181,101,245,0.35); }
+  #cart-count{
+    background: var(--blood); color:#fff; font-weight:700; font-size:11px; min-width:18px; height:18px;
+    border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:'Space Mono',monospace;
+  }
+  .btn-primary{
+    background: linear-gradient(120deg, var(--blood), var(--violet));
+    color:#fff; border:none; padding:11px 22px; border-radius:8px; font-weight:700; font-size:14px;
+    cursor:pointer; font-family:'Rajdhani',sans-serif; letter-spacing:0.03em;
+    box-shadow: 0 0 16px rgba(196,34,58,0.35);
+  }
+  .btn-primary:hover{ box-shadow: 0 0 22px rgba(181,101,245,0.55); }
+
+  /* hero */
+  .hero{
+    position:relative; z-index:2; padding: 100px 32px 80px; text-align:center;
+    display:flex; flex-direction:column; align-items:center;
+    border-bottom:1px solid var(--line);
+  }
+  .rank-badge{
+    font-family:'Space Mono',monospace; font-size:11px; letter-spacing:0.25em; color: var(--violet-glow);
+    text-transform:uppercase; margin-bottom:22px; padding: 6px 16px; border:1px solid var(--line); border-radius:999px;
+  }
+  .hero h1{
+    font-size: clamp(38px,6vw,68px); font-weight:900; line-height:1.08; max-width:820px;
+    background: linear-gradient(120deg, #fff 20%, var(--violet-glow) 60%, var(--blood-glow) 100%);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    text-shadow: 0 0 40px rgba(181,101,245,0.25);
+  }
+  .hero p{ max-width:540px; margin-top:22px; font-size:17px; line-height:1.6; color: var(--dim); }
+  .hero-cta{ display:flex; gap:14px; margin-top:34px; }
+  .btn-ghost{
+    background:transparent; color:var(--parchment); border:1px solid var(--line); padding:11px 22px;
+    border-radius:8px; font-weight:700; font-size:14px; cursor:pointer; font-family:'Rajdhani',sans-serif;
+  }
+  .btn-ghost:hover{ border-color: var(--violet-glow); }
+
+  .gate{
+    margin-top: 60px; width: 260px; height:260px; position:relative;
+  }
+  .gate-ring{
+    position:absolute; inset:0; border-radius:50%;
+    border: 2px solid transparent;
+    background: conic-gradient(from 0deg, var(--blood), var(--violet), var(--blood)) border-box;
+    -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor; mask-composite: exclude;
+    animation: spin 8s linear infinite;
+    filter: drop-shadow(0 0 20px rgba(181,101,245,0.5));
+  }
+  .gate-ring.r2{ inset:22px; animation-duration:6s; animation-direction:reverse; opacity:0.6; }
+  @keyframes spin{ to{ transform: rotate(360deg); } }
+  .gate-core{
+    position:absolute; inset: 60px; border-radius:50%;
+    background: radial-gradient(circle, rgba(181,101,245,0.25), transparent 70%);
+    display:flex; align-items:center; justify-content:center; flex-direction:column;
+  }
+  .gate-core .lvl{ font-family:'Cinzel',serif; font-size:13px; letter-spacing:0.15em; color: var(--dim); }
+  .gate-core .rank{ font-family:'Cinzel',serif; font-size:42px; font-weight:900; color:#fff; text-shadow: 0 0 24px var(--violet-glow); }
+
+  /* sections */
+  .section{ position:relative; z-index:2; padding: 60px 32px; }
+  .section-head{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom:30px; flex-wrap:wrap; gap:10px; }
+  .section-head h2{ font-size:30px; }
+  .section-head span{ font-family:'Space Mono',monospace; font-size:12px; color:var(--dim); }
+
+  .tier-grid{ display:grid; grid-template-columns: repeat(auto-fit, minmax(280px,1fr)); gap:22px; }
+  .tier-card{
+    background: var(--panel); border:1px solid var(--line); border-radius:14px; padding:26px 24px;
+    display:flex; flex-direction:column; gap:16px; position:relative; overflow:hidden;
+    transition: transform .2s ease, border-color .2s ease;
+  }
+  .tier-card:hover{ transform: translateY(-4px); border-color: var(--violet-glow); }
+  .tier-card.featured{ border-color: var(--blood); box-shadow: 0 0 30px rgba(196,34,58,0.25); }
+  .tier-card.featured::before{
+    content:'MOST DEPLOYED'; position:absolute; top:14px; right:-32px; background: var(--blood); color:#fff;
+    font-family:'Space Mono',monospace; font-size:9px; letter-spacing:0.1em; padding:4px 36px; transform: rotate(35deg);
+  }
+  .tier-top{ display:flex; justify-content:space-between; align-items:flex-start; }
+  .tier-rank{
+    width:44px; height:44px; border-radius:10px; display:flex; align-items:center; justify-content:center;
+    font-family:'Cinzel',serif; font-weight:900; font-size:18px; flex-shrink:0;
+  }
+  .rank-e{ background: rgba(139,47,201,0.15); color: var(--violet-glow); border:1px solid var(--violet); }
+  .rank-b{ background: rgba(196,34,58,0.15); color: var(--blood-glow); border:1px solid var(--blood); }
+  .rank-s{ background: linear-gradient(135deg, var(--blood), var(--violet)); color:#fff; border:none; }
+  .tier-card h3{ font-size:22px; margin-top:6px; }
+  .tier-tag{ font-family:'Space Mono',monospace; font-size:11px; color:var(--dim); text-transform:uppercase; letter-spacing:0.08em; }
+  .specs{ list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:8px; }
+  .specs li{ display:flex; justify-content:space-between; font-size:14px; color:var(--dim); border-bottom:1px dashed var(--line); padding-bottom:7px; }
+  .specs li b{ color:var(--parchment); font-weight:600; }
+  .tier-foot{ display:flex; justify-content:space-between; align-items:center; margin-top:auto; padding-top:8px; }
+  .price{ font-family:'Space Mono',monospace; font-size:20px; color:#fff; }
+  .price small{ font-size:12px; color:var(--dim); font-weight:400; }
+  .deploy-btn{
+    background: transparent; border:1px solid var(--violet); color: var(--violet-glow); padding:9px 18px;
+    border-radius:8px; font-weight:700; font-size:13px; cursor:pointer; font-family:'Rajdhani',sans-serif;
+    transition: all .15s ease;
+  }
+  .deploy-btn:hover{ background: var(--violet); color:#fff; }
+  .deploy-btn.added{ background: var(--blood); border-color:var(--blood); color:#fff; }
+
+  /* backend notice */
+  .notice{
+    background: var(--void-2); border:1px solid var(--line); border-radius:14px; padding:24px 26px; margin: 10px 32px 60px;
+    display:flex; gap:16px; align-items:flex-start; position:relative; z-index:2;
+  }
+  .notice .dot{ width:10px; height:10px; border-radius:50%; background: var(--violet-glow); margin-top:6px; flex-shrink:0; box-shadow: 0 0 10px var(--violet-glow); }
+  .notice h4{ font-family:'Cinzel',serif; font-size:15px; margin-bottom:8px; }
+  .notice p{ font-size:14px; color:var(--dim); line-height:1.6; margin:0 0 6px; }
+  .notice ul{ margin:8px 0 0; padding-left:18px; font-size:13px; color:var(--dim); line-height:1.7; }
+
+  footer{ position:relative; z-index:2; padding:40px 32px; border-top:1px solid var(--line); display:flex; justify-content:space-between; flex-wrap:wrap; gap:16px; }
+  footer .mono{ font-size:11px; color:var(--dim); }
+
+  /* Modals & drawer shared */
+  .overlay{ position:fixed; inset:0; background: rgba(5,3,10,0.7); opacity:0; pointer-events:none; transition:opacity .25s ease; z-index:90; backdrop-filter: blur(3px); }
+  .overlay.open{ opacity:1; pointer-events:auto; }
+
+  .modal{
+    position:fixed; top:50%; left:50%; transform: translate(-50%,-48%); width:min(420px,90vw);
+    background: var(--panel); border:1px solid var(--line); border-radius:16px; padding:30px;
+    z-index:110; opacity:0; pointer-events:none; transition: opacity .25s ease, transform .25s ease;
+  }
+  .modal.open{ opacity:1; pointer-events:auto; transform: translate(-50%,-50%); }
+  .modal-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; }
+  .modal-head h3{ font-size:20px; }
+  .close-x{ background:none; border:none; color:var(--parchment); font-size:22px; cursor:pointer; }
+  .tabs{ display:flex; gap:8px; margin-bottom:20px; background: var(--void); border-radius:8px; padding:4px; }
+  .tab{ flex:1; text-align:center; padding:8px; border-radius:6px; font-size:13px; font-weight:600; cursor:pointer; color:var(--dim); }
+  .tab.active{ background: var(--violet); color:#fff; }
+  .field{ margin-bottom:14px; }
+  .field label{ display:block; font-size:12px; color:var(--dim); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.05em; }
+  .field input{
+    width:100%; background: var(--void); border:1px solid var(--line); border-radius:8px; padding:11px 12px;
+    color:var(--parchment); font-family:'Rajdhani',sans-serif; font-size:15px;
+  }
+  .field input:focus{ outline:none; border-color: var(--violet-glow); }
+  .discord-btn{
+    width:100%; margin-top:6px; background:#5865F2; color:#fff; border:none; padding:12px; border-radius:8px;
+    font-weight:700; font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;
+  }
+  .discord-btn.verified{ background: #2f7d4f; }
+  .submit-btn{ width:100%; margin-top:6px; }
+  .status-line{ display:flex; align-items:center; gap:8px; font-size:13px; color:var(--dim); margin-top:14px; }
+  .status-dot{ width:8px; height:8px; border-radius:50%; background: var(--blood); }
+  .status-dot.ok{ background:#4CAF6D; box-shadow:0 0 8px #4CAF6D; }
+
+  /* cart drawer */
+  .drawer{
+    position:fixed; top:0; right:0; height:100%; width:min(420px,92vw); background: var(--void-2);
+    z-index:100; transform: translateX(100%); transition: transform .3s ease; display:flex; flex-direction:column;
+    border-left:1px solid var(--line);
+  }
+  .drawer.open{ transform: translateX(0); }
+  .drawer-head{ padding:22px 24px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center; }
+  .drawer-items{ flex:1; overflow-y:auto; padding:10px 24px; }
+  .empty-cart{ text-align:center; padding:60px 20px; color:var(--dim); font-size:14px; }
+  .line-item{ display:flex; gap:12px; padding:16px 0; border-bottom:1px solid var(--line); align-items:center; }
+  .li-info{ flex:1; }
+  .li-info h4{ font-size:15px; font-weight:600; margin-bottom:4px; }
+  .li-info .tag{ font-size:11px; color:var(--dim); font-family:'Space Mono',monospace; }
+  .li-price{ font-family:'Space Mono',monospace; font-size:14px; }
+  .remove-btn{ background:none; border:none; color: var(--dim); font-size:12px; cursor:pointer; text-decoration:underline; margin-left:8px; }
+  .drawer-foot{ padding:20px 24px 26px; border-top:1px solid var(--line); }
+  .total-row{ display:flex; justify-content:space-between; margin-bottom:16px; font-size:15px; }
+  .total-row .val{ font-family:'Space Mono',monospace; }
+  .pay-options{ display:flex; gap:10px; margin-bottom:16px; }
+  .pay-opt{ flex:1; border:1px solid var(--line); border-radius:8px; padding:10px; text-align:center; font-size:13px; font-weight:600; cursor:pointer; color:var(--dim); }
+  .pay-opt.active{ border-color: var(--violet-glow); color:#fff; background: rgba(181,101,245,0.1); }
+  .upi-box{ background: var(--void); border:1px dashed var(--line); border-radius:10px; padding:16px; text-align:center; margin-bottom:16px; display:none; }
+  .upi-box.show{ display:block; }
+  .upi-qr{
+    width:110px; height:110px; margin:0 auto 10px; border-radius:8px;
+    background: repeating-linear-gradient(45deg, var(--violet) 0 6px, var(--panel) 6px 12px);
+    border:1px solid var(--line);
+  }
+  .upi-box .id{ font-family:'Space Mono',monospace; font-size:12px; color:var(--violet-glow); }
+  .checkout-btn{ width:100%; }
+  .checkout-btn:disabled{ opacity:0.4; cursor:not-allowed; }
+
+  .confirm-card{
+    text-align:center;
+  }
+  .confirm-card .stamp{
+    width:56px;height:56px;border-radius:50%;margin:0 auto 16px;border:2px solid #4CAF6D;color:#4CAF6D;
+    display:flex;align-items:center;justify-content:center;font-size:24px;
+  }
+  .confirm-card p{ font-size:14px; color:var(--dim); line-height:1.6; margin-bottom:18px; }
+  .confirm-card .order-id{ font-family:'Space Mono',monospace; font-size:13px; color: var(--violet-glow); display:block; margin-bottom:22px; }
+
+  @media(max-width:640px){
+    header{ padding:14px 18px; }
+    nav a{ display:none; }
+    .hero{ padding:70px 18px 60px; }
+    .section{ padding:44px 18px; }
+    .notice{ margin:0 18px 44px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="particles"></div>
+
+<header>
+  <div class="logo">
+    <div class="logo-mark">
+      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="lg1" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#FF3B54"/>
+            <stop offset="100%" stop-color="#8B2FC9"/>
+          </linearGradient>
+        </defs>
+        <circle cx="50" cy="50" r="46" fill="none" stroke="url(#lg1)" stroke-width="3"/>
+        <circle cx="50" cy="50" r="38" fill="none" stroke="url(#lg1)" stroke-width="1" stroke-dasharray="2 5" opacity="0.6"/>
+        <path d="M56 14 L34 54 L48 54 L42 88 L70 44 L54 44 Z" fill="url(#lg1)"/>
+      </svg>
+    </div>
+    <div class="logo-text">RIFTCRAFT<span>Hosting Guild</span></div>
+  </div>
+  <nav>
+    <a href="#mc">Minecraft</a>
+    <a href="#vps">VPS</a>
+    <a href="#notice-anchor">How it works</a>
+  </nav>
+  <div class="hdr-actions">
+    <div class="dot-menu-wrap">
+      <button class="dot-menu-btn" id="dot-menu-btn" aria-label="Browse categories">
+        <span></span><span></span><span></span>
+      </button>
+      <div class="dot-dropdown" id="dot-dropdown">
+        <div class="grp-label">Minecraft Ranks</div>
+        <a href="#mc-budget"><span>Budget Node</span><span class="rank-chip">E</span></a>
+        <a href="#mc-perf"><span>Performance Node</span><span class="rank-chip">B</span></a>
+        <a href="#mc-beast"><span>Beast Node</span><span class="rank-chip">S</span></a>
+        <hr>
+        <div class="grp-label">VPS Ranks</div>
+        <a href="#vps-budget"><span>Budget VPS</span><span class="rank-chip">D</span></a>
+        <a href="#vps-perf"><span>Performance VPS</span><span class="rank-chip">A</span></a>
+      </div>
+    </div>
+    <button class="icon-btn" id="account-btn">Account</button>
+    <button class="icon-btn" id="cart-btn">Cart <span id="cart-count">0</span></button>
+  </div>
+</header>
+
+<section class="hero">
+  <span class="rank-badge">Servers rated E through S · Instant deploy</span>
+  <h1>Ascend past<br>laggy hosting.</h1>
+  <p>Minecraft and VPS nodes ranked by power, not marketing. Pick your rank, verify your guild tag on Discord, and deploy in under two minutes.</p>
+  <div class="hero-cta">
+    <button class="btn-primary" onclick="document.getElementById('mc').scrollIntoView()">View server ranks</button>
+    <button class="btn-ghost" id="account-btn-2">Create account</button>
+  </div>
+  <div class="gate">
+    <div class="gate-ring"></div>
+    <div class="gate-ring r2"></div>
+    <div class="gate-core">
+      <span class="lvl">GATE STATUS</span>
+      <span class="rank">OPEN</span>
+    </div>
+  </div>
+</section>
+
+<div class="section" id="mc">
+  <div class="section-head">
+    <h2>Minecraft Server Ranks</h2>
+    <span>3 tiers · Java &amp; Bedrock</span>
+  </div>
+  <div class="tier-grid" id="mc-grid"></div>
+</div>
+
+<div class="section" id="vps">
+  <div class="section-head">
+    <h2>VPS Ranks</h2>
+    <span>2 tiers · Full root access</span>
+  </div>
+  <div class="tier-grid" id="vps-grid"></div>
+</div>
+
+<div class="notice" id="notice-anchor">
+  <div class="dot"></div>
+  <div>
+    <h4>What's live in this build vs. what needs a backend</h4>
+    <p>This page is a fully working frontend — browsing, cart, account form, and Discord/UPI flows are wired up and simulated so you can see and test the experience.</p>
+    <p><b>Three things need a real backend once you deploy this</b> (Nifty and similar static hosts only serve HTML/CSS/JS, they don't run servers):</p>
+    <ul>
+      <li><b>UPI payments</b> — needs a registered payment gateway (Razorpay/Cashfree/PhonePe etc.) and a server to create orders and verify webhooks.</li>
+      <li><b>Discord verification</b> — needs a Discord OAuth2 app + a small server to exchange the auth code and check guild membership/roles.</li>
+      <li><b>Hourly email reports</b> — needs a scheduled job (cron, or a service like GitHub Actions/Render Cron) that queries your server stats and sends mail via something like Nodemailer or Resend.</li>
+    </ul>
+    <p>Say the word and I'll write that backend (Node/Express is a natural fit) as a separate deployable service — the frontend here can point straight at it.</p>
+  </div>
+</div>
+
+<footer>
+  <span class="mono">© 2026 RIFTCRAFT — Demo storefront</span>
+  <span class="mono">Payments, verification, and reports are simulated in this build.</span>
+</footer>
+
+<!-- Cart Drawer -->
+<div class="overlay" id="cart-overlay"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-head">
+    <h3 style="font-family:'Cinzel',serif;font-size:20px;">Your loadout</h3>
+    <button class="close-x" id="close-drawer">&times;</button>
+  </div>
+  <div class="drawer-items" id="drawer-items"></div>
+  <div class="drawer-foot">
+    <div class="total-row"><span>Subtotal</span><span class="val" id="subtotal">₹0</span></div>
+    <div class="pay-options">
+      <div class="pay-opt active" data-method="upi">UPI</div>
+      <div class="pay-opt" data-method="card">Card</div>
+    </div>
+    <div class="upi-box show" id="upi-box">
+      <div class="upi-qr"></div>
+      <div class="id">pay@riftcraft (simulated)</div>
+    </div>
+    <button class="btn-primary checkout-btn" id="checkout-btn" disabled>Pay &amp; Deploy</button>
+  </div>
+</div>
+
+<!-- Account Modal -->
+<div class="overlay" id="account-overlay"></div>
+<div class="modal" id="account-modal">
+  <div class="modal-head">
+    <h3 style="font-family:'Cinzel',serif;">Guild Account</h3>
+    <button class="close-x" id="close-account">&times;</button>
+  </div>
+  <div class="tabs">
+    <div class="tab active" data-tab="signup">Sign up</div>
+    <div class="tab" data-tab="login">Log in</div>
+  </div>
+  <div class="field"><label>Email</label><input type="email" placeholder="you@example.com"></div>
+  <div class="field"><label>Password</label><input type="password" placeholder="••••••••"></div>
+  <button class="btn-primary submit-btn" id="account-submit">Create account</button>
+  <button class="discord-btn" id="discord-btn">Verify with Discord</button>
+  <div class="status-line"><div class="status-dot" id="discord-dot"></div><span id="discord-status">Discord not verified</span></div>
+</div>
+
+<!-- Confirm Modal -->
+<div class="overlay" id="confirm-overlay"></div>
+<div class="modal" id="confirm-modal">
+  <div class="confirm-card">
+    <div class="stamp">✓</div>
+    <h3 style="font-family:'Cinzel',serif;font-size:22px;margin-bottom:10px;">Node deployed</h3>
+    <p>Your server is spinning up. Login details will land in your account panel.</p>
+    <span class="order-id" id="order-id">ORDER #000000</span>
+    <button class="btn-primary" id="confirm-close" style="width:100%;">Return to guild hall</button>
+  </div>
+</div>
+
+<script>
+/* three-dot category dropdown */
+const dotBtn = document.getElementById('dot-menu-btn');
+const dotDropdown = document.getElementById('dot-dropdown');
+dotBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  dotDropdown.classList.toggle('open');
+});
+document.addEventListener('click', (e) => {
+  if(!dotDropdown.contains(e.target) && e.target !== dotBtn){
+    dotDropdown.classList.remove('open');
+  }
+});
+dotDropdown.querySelectorAll('a').forEach(a => {
+  a.addEventListener('click', () => dotDropdown.classList.remove('open'));
+});
+
+/* ambient particles */
+const pWrap = document.getElementById('particles');
+const colors = ['#B565F5','#FF3B54','#8B2FC9'];
+for(let i=0;i<28;i++){
+  const m = document.createElement('div');
+  const size = 2 + Math.random()*3;
+  m.className = 'mote';
+  m.style.width = size+'px';
+  m.style.height = size+'px';
+  m.style.left = Math.random()*100+'vw';
+  m.style.bottom = '-10px';
+  m.style.background = colors[i%colors.length];
+  m.style.boxShadow = '0 0 6px '+colors[i%colors.length];
+  m.style.animationDuration = (8 + Math.random()*10)+'s';
+  m.style.animationDelay = (Math.random()*10)+'s';
+  pWrap.appendChild(m);
+}
+
+/* product data */
+const mcTiers = [
+  { id:'mc-budget', rank:'E', rankClass:'rank-e', name:'Budget Node', tag:'For small survival worlds', price:149, cycle:'/mo',
+    specs:[['RAM','2 GB'],['vCPU','1 core shared'],['Players','Up to 10'],['DDoS Protection','Basic']] },
+  { id:'mc-perf', rank:'B', rankClass:'rank-b', name:'Performance Node', tag:'For modded &amp; SMP servers', price:449, cycle:'/mo',
+    specs:[['RAM','8 GB'],['vCPU','3 cores dedicated'],['Players','Up to 60'],['DDoS Protection','Advanced']], featured:true },
+  { id:'mc-beast', rank:'S', rankClass:'rank-s', name:'Beast Node', tag:'For networks &amp; large packs', price:999, cycle:'/mo',
+    specs:[['RAM','16 GB'],['vCPU','6 cores dedicated'],['Players','Up to 150'],['DDoS Protection','Enterprise']] },
+];
+
+const vpsTiers = [
+  { id:'vps-budget', rank:'D', rankClass:'rank-e', name:'Budget VPS', tag:'Small bots &amp; websites', price:199, cycle:'/mo',
+    specs:[['vCPU','1 core'],['RAM','2 GB'],['Storage','40 GB SSD'],['Bandwidth','1 TB']] },
+  { id:'vps-perf', rank:'A', rankClass:'rank-b', name:'Performance VPS', tag:'Panels &amp; multi-app hosting', price:699, cycle:'/mo',
+    specs:[['vCPU','4 cores'],['RAM','8 GB'],['Storage','120 GB SSD'],['Bandwidth','4 TB']], featured:true },
+];
+
+function renderTiers(list, gridId){
+  const grid = document.getElementById(gridId);
+  grid.innerHTML = list.map(t => `
+    <div class="tier-card ${t.featured ? 'featured':''}" id="${t.id}">
+      <div class="tier-top">
+        <div>
+          <div class="tier-tag">${t.tag}</div>
+          <h3>${t.name}</h3>
+        </div>
+        <div class="tier-rank ${t.rankClass}">${t.rank}</div>
+      </div>
+      <ul class="specs">
+        ${t.specs.map(s => `<li><span>${s[0]}</span><b>${s[1]}</b></li>`).join('')}
+      </ul>
+      <div class="tier-foot">
+        <div class="price">₹${t.price}<small> ${t.cycle}</small></div>
+        <button class="deploy-btn" data-id="${t.id}">Add to loadout</button>
+      </div>
+    </div>
+  `).join('');
+}
+renderTiers(mcTiers, 'mc-grid');
+renderTiers(vpsTiers, 'vps-grid');
+
+const allProducts = [...mcTiers, ...vpsTiers];
+let cart = {};
+
+document.body.addEventListener('click', e => {
+  const btn = e.target.closest('.deploy-btn');
+  if(!btn) return;
+  const id = btn.dataset.id;
+  cart[id] = (cart[id] || 0) + 1;
+  btn.textContent = 'Added ✓';
+  btn.classList.add('added');
+  setTimeout(() => { btn.textContent = 'Add to loadout'; btn.classList.remove('added'); }, 900);
+  renderCart();
+});
+
+/* cart drawer */
+const cartOverlay = document.getElementById('cart-overlay');
+const drawer = document.getElementById('drawer');
+const drawerItems = document.getElementById('drawer-items');
+const cartCount = document.getElementById('cart-count');
+const subtotalEl = document.getElementById('subtotal');
+const checkoutBtn = document.getElementById('checkout-btn');
+
+function openDrawer(){ cartOverlay.classList.add('open'); drawer.classList.add('open'); }
+function closeDrawer(){ cartOverlay.classList.remove('open'); drawer.classList.remove('open'); }
+document.getElementById('cart-btn').addEventListener('click', openDrawer);
+document.getElementById('close-drawer').addEventListener('click', closeDrawer);
+cartOverlay.addEventListener('click', closeDrawer);
+
+function renderCart(){
+  const ids = Object.keys(cart).filter(id => cart[id] > 0);
+  cartCount.textContent = ids.reduce((s,id)=>s+cart[id],0);
+  if(ids.length === 0){
+    drawerItems.innerHTML = `<div class="empty-cart">No servers queued yet.<br>Add a rank from the shop.</div>`;
+    checkoutBtn.disabled = true;
+    subtotalEl.textContent = '₹0';
+    return;
+  }
+  let subtotal = 0;
+  drawerItems.innerHTML = ids.map(id => {
+    const p = allProducts.find(pr => pr.id === id);
+    const qty = cart[id];
+    const lineTotal = p.price * qty;
+    subtotal += lineTotal;
+    return `
+      <div class="line-item">
+        <div class="li-info">
+          <h4>${p.name} <span class="mono" style="font-size:11px;color:var(--dim);">×${qty}</span></h4>
+          <span class="tag">${p.rank}-Rank · ${p.cycle.replace('/','')}</span>
+        </div>
+        <div class="li-price">₹${lineTotal}</div>
+        <button class="remove-btn" data-id="${id}">Remove</button>
+      </div>
+    `;
+  }).join('');
+  subtotalEl.textContent = `₹${subtotal}`;
+  checkoutBtn.disabled = false;
+}
+
+drawerItems.addEventListener('click', e => {
+  const btn = e.target.closest('.remove-btn');
+  if(!btn) return;
+  delete cart[btn.dataset.id];
+  renderCart();
+});
+
+document.querySelectorAll('.pay-opt').forEach(opt => {
+  opt.addEventListener('click', () => {
+    document.querySelectorAll('.pay-opt').forEach(o => o.classList.remove('active'));
+    opt.classList.add('active');
+    document.getElementById('upi-box').classList.toggle('show', opt.dataset.method === 'upi');
+  });
+});
+
+/* account modal */
+const accountOverlay = document.getElementById('account-overlay');
+const accountModal = document.getElementById('account-modal');
+function openAccount(){ accountOverlay.classList.add('open'); accountModal.classList.add('open'); }
+function closeAccount(){ accountOverlay.classList.remove('open'); accountModal.classList.remove('open'); }
+document.getElementById('account-btn').addEventListener('click', openAccount);
+document.getElementById('account-btn-2').addEventListener('click', openAccount);
+document.getElementById('close-account').addEventListener('click', closeAccount);
+accountOverlay.addEventListener('click', closeAccount);
+
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('account-submit').textContent = tab.dataset.tab === 'signup' ? 'Create account' : 'Log in';
+  });
+});
+
+document.getElementById('account-submit').addEventListener('click', () => {
+  const btn = document.getElementById('account-submit');
+  btn.textContent = 'Signed in ✓';
+  setTimeout(()=> closeAccount(), 700);
+});
+
+const discordBtn = document.getElementById('discord-btn');
+const discordDot = document.getElementById('discord-dot');
+const discordStatus = document.getElementById('discord-status');
+discordBtn.addEventListener('click', () => {
+  discordBtn.textContent = 'Connecting to Discord…';
+  setTimeout(() => {
+    discordBtn.textContent = 'Discord Verified ✓';
+    discordBtn.classList.add('verified');
+    discordDot.classList.add('ok');
+    discordStatus.textContent = 'Verified — @you#0000 in guild server';
+  }, 1100);
+});
+
+/* checkout */
+const confirmOverlay = document.getElementById('confirm-overlay');
+const confirmModal = document.getElementById('confirm-modal');
+checkoutBtn.addEventListener('click', () => {
+  const orderNum = Math.floor(100000 + Math.random()*900000);
+  document.getElementById('order-id').textContent = `ORDER #${orderNum}`;
+  cart = {};
+  renderCart();
+  closeDrawer();
+  confirmOverlay.classList.add('open');
+  confirmModal.classList.add('open');
+});
+document.getElementById('confirm-close').addEventListener('click', () => {
+  confirmOverlay.classList.remove('open');
+  confirmModal.classList.remove('open');
+});
+confirmOverlay.addEventListener('click', () => {
+  confirmOverlay.classList.remove('open');
+  confirmModal.classList.remove('open');
+});
+
+renderCart();
+</script>
+</body>
+</html>
